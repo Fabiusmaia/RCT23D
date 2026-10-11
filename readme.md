@@ -12,6 +12,15 @@ The 3D mode is under development on this branch. It adds free-fly and first-pers
 
 The default shortcut for switching views is **F6**. The 3D view settings window lets you adjust field of view, movement speed, mouse sensitivity, draw distance, and visual options. Shortcuts can be changed in OpenRCT2's settings.
 
+### Screenshots
+
+<p align="center">
+  <img src="docs/screenshots/park-overview.png" width="32%" alt="3D overview of a park with rides, paths, trees, and a lake" />
+  <img src="docs/screenshots/western-area.png" width="32%" alt="3D view of a western themed park area" />
+  <img src="docs/screenshots/coaster-view.png" width="32%" alt="Close 3D view of a roller coaster and train" />
+</p>
+<p align="center">Park overview · Western themed area · Coaster view</p>
+
 ### Requirements
 
 - Windows 10/11, Linux, or macOS compatible with OpenRCT2 requirements.
@@ -127,6 +136,15 @@ Uma implementação de visualização 3D para o OpenRCT2, projeto de código abe
 O modo 3D está em desenvolvimento nesta branch. A implementação adiciona câmera livre e em primeira pessoa, câmera a bordo de veículos, renderização de terreno e água, objetos derivados dos sprites existentes, sombras, controles de distância e campo de visão e alternância para a interface isométrica. A disponibilidade e o desempenho dependem do suporte a OpenGL do computador.
 
 Atalho padrão para alternar a visualização: **F6**. A janela de configurações do modo 3D permite ajustar campo de visão, velocidade, sensibilidade, distância de desenho e opções visuais. Os atalhos podem ser alterados nas configurações do OpenRCT2.
+
+### Capturas de tela
+
+<p align="center">
+  <img src="docs/screenshots/park-overview.png" width="32%" alt="Visão geral 3D de um parque com atrações, caminhos, árvores e um lago" />
+  <img src="docs/screenshots/western-area.png" width="32%" alt="Vista 3D de uma área temática de velho oeste" />
+  <img src="docs/screenshots/coaster-view.png" width="32%" alt="Vista 3D aproximada de uma montanha-russa e seu trem" />
+</p>
+<p align="center">Visão geral do parque · Área temática de velho oeste · Montanha-russa</p>
 
 ## Requisitos
 
