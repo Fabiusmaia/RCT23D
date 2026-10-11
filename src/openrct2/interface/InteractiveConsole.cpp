@@ -11,6 +11,7 @@
 
 #include "../Context.h"
 #include "../Date.h"
+#include "../Diagnostic.h"
 #include "../Game.h"
 #include "../GameState.h"
 #include "../OpenRCT2.h"
@@ -49,6 +50,8 @@
 #include "../object/ObjectRepository.h"
 #include "../object/PeepAnimationsObject.h"
 #include "../profiling/Profiling.h"
+#include "../render3d/Render3D.h"
+#include "../render3d/WalkCollision.h"
 #include "../ride/Ride.h"
 #include "../ride/RideConstruction.h"
 #include "../ride/RideData.h"
@@ -1667,6 +1670,128 @@ static void ConsoleCommandAddNewsItem([[maybe_unused]] InteractiveConsole& conso
     console.WriteLine("Successfully added News Item");
 }
 
+static void ConsoleCommandView3D(InteractiveConsole& console, const arguments_t& argv)
+{
+    if (argv.empty())
+    {
+        Render3D::Toggle();
+    }
+    else if (argv[0] == "on" || argv[0] == "off")
+    {
+        Render3D::SetActive(argv[0] == "on");
+    }
+    else if (argv[0] == "walk")
+    {
+        Render3D::ToggleCameraMode();
+    }
+    else if (argv[0] == "screenshot" && argv.size() >= 2)
+    {
+        Render3D::RequestScreenshot(argv[1]);
+    }
+    else if (argv[0] == "stats")
+    {
+        Render3D::RequestStats();
+    }
+    else if (argv[0] == "walkprobe" && argv.size() >= 6)
+    {
+        // Walks from x y (game units) towards dx dy until blocked or `distance` is covered, using the 3D walking
+        // collision, and reports where it stopped.
+        try
+        {
+            const float x = std::stof(argv[1]);
+            const float y = std::stof(argv[2]);
+            const float dx = std::stof(argv[3]);
+            const float dy = std::stof(argv[4]);
+            const float distance = std::stof(argv[5]);
+            const float length = std::sqrt(dx * dx + dy * dy);
+            float ground{};
+            if (length <= 0 || !Render3D::FindWalkableGround(x, y, 4000.0f, ground))
+            {
+                console.WriteLineError("No walkable ground at the start.");
+                return;
+            }
+            float walked = 0;
+            Render3D::Vec3 feet = Render3D::GameToWorld(x, y, ground);
+            while (walked < distance)
+            {
+                float groundZ{};
+                const float nx = feet.x + dx / length * 2.0f;
+                const float ny = feet.y + dy / length * 2.0f;
+                if (!Render3D::TryWalk(feet, nx, ny, groundZ))
+                    break;
+                feet = { nx, ny, groundZ };
+                walked += 2.0f;
+            }
+            char line[160];
+            std::snprintf(
+                line, sizeof(line), "walkprobe: walked %.0f of %.0f, stopped at %.0f %.0f height %.0f%s", walked, distance,
+                feet.x, feet.y, Render3D::WorldZToGame(feet.z), walked < distance ? " (blocked)" : "");
+            console.WriteLine(line);
+            LOG_INFO("%s", line);
+        }
+        catch (const std::exception&)
+        {
+            console.WriteLineError("Invalid number.");
+        }
+        return;
+    }
+    else if (argv[0] == "ride")
+    {
+        Render3D::ToggleRideCamera();
+    }
+    else if (argv[0] == "settings")
+    {
+        ContextOpenWindow(WindowClass::view3DSettings);
+    }
+    else if (argv[0] == "dump" && argv.size() >= 3)
+    {
+        try
+        {
+            const auto rotation = argv.size() >= 4 ? std::stoi(argv[3]) : 0;
+            const auto text = Render3D::DescribeTileSprites(
+                std::stoi(argv[1]), std::stoi(argv[2]), static_cast<uint8_t>(rotation & 3));
+            console.WriteLine(text);
+            // Also log it, so it can be read when the console is not visible.
+            LOG_INFO("view3d dump %s %s:\n%s", argv[1].c_str(), argv[2].c_str(), text.c_str());
+        }
+        catch (const std::exception&)
+        {
+            console.WriteLineError("Invalid number.");
+        }
+        return;
+    }
+    else if (argv[0] == "camera" && argv.size() >= 6)
+    {
+        // Positions are in game units (x/y 32 per tile, z in game height units), angles in degrees.
+        try
+        {
+            auto& camera = Render3D::GetCamera();
+            const float x = std::stof(argv[1]);
+            const float y = std::stof(argv[2]);
+            const float z = std::stof(argv[3]);
+            camera.SetPosition(Render3D::GameToWorld(x, y, z));
+            camera.SetOrientation(
+                std::stof(argv[4]) * Render3D::kPi / 180.0f, std::stof(argv[5]) * Render3D::kPi / 180.0f);
+        }
+        catch (const std::exception&)
+        {
+            console.WriteLineError("Invalid number.");
+            return;
+        }
+    }
+    else
+    {
+        console.WriteLineError(
+            "Usage: view3d [on | off | walk | ride | settings | stats | dump <x> <y> [rotation] | screenshot <file> | camera <x> <y> <z> <yaw> <pitch>]");
+        return;
+    }
+
+    const auto& pos = Render3D::GetCamera().GetPosition();
+    console.WriteFormatLine(
+        "3D view: %s, camera %.0f %.0f %.0f", Render3D::IsActive() ? "on" : "off", pos.x, pos.y,
+        Render3D::WorldZToGame(pos.z));
+}
+
 static void ConsoleCommandProfilerReset([[maybe_unused]] InteractiveConsole& console, [[maybe_unused]] const arguments_t& argv)
 {
     Profiling::resetData();
@@ -1846,6 +1971,8 @@ static constexpr ConsoleCommand console_command_table[] = {
     { "spawn_balloon", ConsoleSpawnBalloon, "Spawns a balloon.", "spawn_balloon <x> <y> <z> <colour>" },
     { "staff", ConsoleCommandStaff, "Staff management.", "staff <subcommand>" },
     { "terminate", ConsoleCommandTerminate, "Calls std::terminate(), for testing purposes only.", "terminate" },
+    { "view3d", ConsoleCommandView3D, "Toggles the 3D view, sets its camera or saves a screenshot of it.",
+      "view3d [on | off | walk | ride | settings | stats | dump <x> <y> [rotation] | screenshot <file> | camera <x> <y> <z> <yaw> <pitch>]" },
     { "variables", ConsoleCommandVariables, "Lists all the variables that can be used with get and sometimes set.",
       "variables" },
     { "windows", ConsoleCommandWindows, "Lists all the windows that can be opened.", "windows" },

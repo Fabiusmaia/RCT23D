@@ -73,6 +73,7 @@ namespace OpenRCT2::Ui
         void updateAnalogueScroll();
 
         void handleViewScrolling();
+        void handle3DCamera();
         void handleModifiers();
         void processEvents();
         void process(const InputEvent& e);

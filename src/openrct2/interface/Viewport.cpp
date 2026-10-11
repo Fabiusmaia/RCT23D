@@ -31,6 +31,7 @@
 #include "../object/WallSceneryEntry.h"
 #include "../paint/Paint.h"
 #include "../profiling/Profiling.h"
+#include "../render3d/Render3D.h"
 #include "../ride/Ride.h"
 #include "../ride/RideData.h"
 #include "../ride/TrackDesign.h"
@@ -831,6 +832,19 @@ namespace OpenRCT2
             return;
         if (rt.y >= viewport->pos.y + viewport->height)
             return;
+
+        auto* mainWindow = WindowGetMain();
+        if (Render3D::IsActive() && mainWindow != nullptr && mainWindow->viewport == viewport)
+        {
+            // The 3D renderer draws the main viewport underneath the UI; leave it transparent here.
+            const ScreenRect area{
+                { std::max(rt.x, viewport->pos.x), std::max(rt.y, viewport->pos.y) },
+                { std::min(rt.x + rt.width, viewport->pos.x + viewport->width) - 1,
+                  std::min(rt.y + rt.height, viewport->pos.y + viewport->height) - 1 },
+            };
+            Rectangle::fill(rt, area, PaletteIndex::transparent);
+            return;
+        }
 
         ViewportPaint(viewport, rt);
     }

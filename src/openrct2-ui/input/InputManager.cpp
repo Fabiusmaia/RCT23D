@@ -27,9 +27,34 @@
 #include <openrct2/config/Config.h>
 #include <openrct2/interface/Viewport.h>
 #include <openrct2/paint/VirtualFloor.h>
+#include <openrct2/render3d/Render3D.h>
 #include <openrct2/ui/WindowManager.h>
 
 using namespace OpenRCT2::Ui;
+
+// Keys used to fly the 3D camera. While the 3D view is active they do not trigger their usual shortcuts.
+static bool Is3DCameraKey(uint32_t keycode)
+{
+    switch (keycode)
+    {
+        case SDLK_w:
+        case SDLK_a:
+        case SDLK_s:
+        case SDLK_d:
+        case SDLK_q:
+        case SDLK_e:
+        case SDLK_f:
+        case SDLK_r:
+        case SDLK_SPACE:
+        case SDLK_UP:
+        case SDLK_DOWN:
+        case SDLK_LEFT:
+        case SDLK_RIGHT:
+            return true;
+        default:
+            return false;
+    }
+}
 
 InputManager::InputManager()
 {
@@ -206,7 +231,29 @@ void InputManager::process()
     handleModifiers();
     processEvents();
     processHoldEvents();
+    handle3DCamera();
     handleViewScrolling();
+}
+
+void InputManager::handle3DCamera()
+{
+    Render3D::CameraInput input{};
+    if (Render3D::IsActive() && ContextHasFocus() && !hasTextInputFocus() && !GetInGameConsole().IsOpen() && !gChatOpen
+        && !_keyboardState.empty())
+    {
+        auto down = [this](SDL_Scancode code) {
+            return static_cast<size_t>(code) < _keyboardState.size() && _keyboardState[code] != 0;
+        };
+        input.forward = down(SDL_SCANCODE_W) || down(SDL_SCANCODE_UP);
+        input.backward = down(SDL_SCANCODE_S) || down(SDL_SCANCODE_DOWN);
+        input.left = down(SDL_SCANCODE_A) || down(SDL_SCANCODE_LEFT);
+        input.right = down(SDL_SCANCODE_D) || down(SDL_SCANCODE_RIGHT);
+        input.up = down(SDL_SCANCODE_E) || down(SDL_SCANCODE_SPACE);
+        input.down = down(SDL_SCANCODE_Q);
+        input.sprint = down(SDL_SCANCODE_LSHIFT) || down(SDL_SCANCODE_RSHIFT);
+    }
+    // Always called so that queued 3D errors are reported even when the view is off.
+    Render3D::Update(input);
 }
 
 void InputManager::handleViewScrolling()
@@ -216,6 +263,10 @@ void InputManager::handleViewScrolling()
 
     auto& console = GetInGameConsole();
     if (console.IsOpen())
+        return;
+
+    // The 3D camera handles movement itself; scrolling the hidden isometric view would only confuse the sync on exit.
+    if (Render3D::IsActive())
         return;
 
     auto mainWindow = WindowGetMain();
@@ -385,6 +436,21 @@ void InputManager::process(const InputEvent& e)
 
             if (Windows::IsUsingWidgetTextBox())
             {
+                return;
+            }
+
+            constexpr uint32_t kBlockingModifiers = KMOD_CTRL | KMOD_ALT | KMOD_GUI;
+            if (Render3D::IsActive() && Is3DCameraKey(e.button) && (e.modifiers & kBlockingModifiers) == 0
+                && !shortcutManager.isPendingShortcutChange())
+            {
+                if (e.button == SDLK_f && e.state == InputEventState::down)
+                {
+                    Render3D::ToggleCameraMode();
+                }
+                else if (e.button == SDLK_r && e.state == InputEventState::down)
+                {
+                    Render3D::ToggleRideCamera();
+                }
                 return;
             }
         }

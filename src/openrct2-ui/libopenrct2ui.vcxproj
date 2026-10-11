@@ -62,6 +62,7 @@
     <ClInclude Include="drawing\engines\opengl\OpenGLFramebuffer.h" />
     <ClInclude Include="drawing\engines\opengl\OpenGLShaderProgram.h" />
     <ClInclude Include="drawing\engines\opengl\SwapFramebuffer.h" />
+    <ClInclude Include="drawing\engines\opengl\Renderer3D.h" />
     <ClInclude Include="drawing\engines\opengl\TextureCache.h" />
     <ClInclude Include="drawing\engines\opengl\TransparencyDepth.h" />
     <ClInclude Include="input\InputManager.h" />
@@ -130,6 +131,7 @@
     <ClCompile Include="drawing\engines\opengl\OpenGLFramebuffer.cpp" />
     <ClCompile Include="drawing\engines\opengl\OpenGLShaderProgram.cpp" />
     <ClCompile Include="drawing\engines\opengl\SwapFramebuffer.cpp" />
+    <ClCompile Include="drawing\engines\opengl\Renderer3D.cpp" />
     <ClCompile Include="drawing\engines\opengl\TextureCache.cpp" />
     <ClCompile Include="drawing\engines\opengl\TransparencyDepth.cpp" />
     <ClCompile Include="input\InputManager.cpp" />
@@ -246,6 +248,7 @@
     <ClCompile Include="windows\TrackList.cpp" />
     <ClCompile Include="windows\Transparency.cpp" />
     <ClCompile Include="windows\ViewClipping.cpp" />
+    <ClCompile Include="windows\View3DSettings.cpp" />
     <ClCompile Include="windows\Viewport.cpp" />
     <ClCompile Include="windows\Water.cpp" />
   </ItemGroup>

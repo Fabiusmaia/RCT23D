@@ -3872,3 +3872,26 @@ STR_7078    :Pine green
 STR_7079    :Ruby
 STR_7080    :Deep blue
 STR_7081    :Silver
+STR_7082    :3D View
+STR_7083    :The 3D view requires the OpenGL rendering engine. Select it in Options > Display > Rendering engine.
+STR_7084    :The 3D view is only available while playing or editing a park.
+STR_7085    :The 3D view could not be started
+STR_7086    :Toggle 3D view
+STR_7087    :3D view: toggle walking / flying camera
+STR_7088    :3D view
+STR_7089    :3D view settings
+STR_7090    :Enable 3D view
+STR_7091    :Field of view:
+STR_7092    :Movement speed:
+STR_7093    :Mouse sensitivity:
+STR_7094    :Draw distance (tiles):
+STR_7095    :Invert mouse Y axis
+STR_7096    :Walking camera
+STR_7097    :Right-drag: look around{NEWLINE}W A S D: move    Q / E: down / up{NEWLINE}Shift: sprint    F: walk / fly    R: ride{NEWLINE}Mouse wheel: speed    F6: 2D / 3D
+STR_7098    :Walk at eye height over terrain and paths instead of flying freely
+STR_7099    :There is no ride train close by. Fly next to a roller coaster train and try again.
+STR_7100    :3D view: ride the nearest train
+STR_7101    :Ride nearest train
+STR_7102    :Smooth sprites
+STR_7103    :Doubles the game's pixel art with a pixel art filter and smooths it up close
+STR_7104    :Sun shadows

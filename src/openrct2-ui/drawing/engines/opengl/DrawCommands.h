@@ -120,6 +120,8 @@ namespace OpenRCT2::Ui
             FLAG_MASK = (1u << 3u),
             FLAG_CROSS_HATCH = (1u << 4u),
             FLAG_TTF_TEXT = (1u << 5u),
+            // Writes palette index 0 instead of discarding it, used to clear the area the 3D view shows through.
+            FLAG_WRITE_TRANSPARENT = (1u << 6u),
             // bits 8 to 16 used to store hinting threshold.
             FLAG_TTF_HINTING_THRESHOLD_MASK = 0xff00
         };

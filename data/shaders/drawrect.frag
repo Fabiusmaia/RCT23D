@@ -6,6 +6,7 @@ const int FLAG_NO_TEXTURE           = (1 << 2);
 const int FLAG_MASK                 = (1 << 3);
 const int FLAG_CROSS_HATCH          = (1 << 4);
 const int FLAG_TTF_TEXT             = (1 << 5);
+const int FLAG_WRITE_TRANSPARENT    = (1 << 6);
 
 uniform usampler2DArray uTexture;
 uniform usampler2D      uPaletteTex;
@@ -97,7 +98,7 @@ void main()
         texel = texture(uPaletteTex, vec2(texel, fPalettes.x) / 256.f).r;
     }
 
-    if (texel == 0u)
+    if (texel == 0u && (fFlags & FLAG_WRITE_TRANSPARENT) == 0)
     {
         discard;
     }

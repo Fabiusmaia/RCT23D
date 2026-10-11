@@ -1795,6 +1795,12 @@ enum : StringId
     STR_GUESTS_LEAVING_PARK = 7062,
     STR_GUESTS_WATCHING_NEW_RIDE_BEING_CONSTRUCTED = 7063,
 
+    STR_3D_VIEW = 7082,
+    STR_3D_VIEW_REQUIRES_OPENGL = 7083,
+    STR_3D_VIEW_NOT_AVAILABLE_HERE = 7084,
+    STR_3D_VIEW_FAILED = 7085,
+    STR_3D_VIEW_NO_TRAIN_NEARBY = 7099,
+
     // Have to include resource strings (from scenarios and objects) for the time being now that language is partially working
     /* MAX_STR_COUNT = 32768 */ // MAX_STR_COUNT - upper limit for number of strings, not the current count strings
 };

@@ -74,6 +74,12 @@ namespace OpenRCT2::Drawing
         virtual DrawingEngineFlags GetFlags() = 0;
 
         virtual void InvalidateImage(uint32_t image) = 0;
+
+        // Whether the engine can draw the main viewport in 3D (see Render3D).
+        virtual bool SupportsRender3D() const
+        {
+            return false;
+        }
     };
 
     struct IDrawingEngineFactory

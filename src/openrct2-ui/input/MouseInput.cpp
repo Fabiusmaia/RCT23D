@@ -29,6 +29,7 @@
 #include <openrct2/interface/Cursors.h>
 #include <openrct2/interface/Viewport.h>
 #include <openrct2/interface/WindowTypes.h>
+#include <openrct2/render3d/Render3D.h>
 #include <openrct2/ui/WindowManager.h>
 #include <openrct2/world/Map.h>
 #include <optional>
@@ -360,6 +361,11 @@ namespace OpenRCT2
                 else if (state == MouseState::rightRelease)
                 {
                     InputViewportDragEnd();
+                    // Picking world objects is not supported from the 3D view.
+                    const auto* dragWindow = windowMgr->FindByNumber(
+                        _dragWidget.windowClassification, _dragWidget.windowNumber);
+                    if (Render3D::IsCapturingWindow(dragWindow))
+                        break;
                     if (_ticksSinceDragStart.has_value() && gCurrentRealTimeTicks - _ticksSinceDragStart.value() < 500)
                     {
                         // If the user pressed the right mouse button for less than 500 ticks, interpret as right click
@@ -584,6 +590,12 @@ namespace OpenRCT2
         {
             ContextShowCursor();
             _inputState = InputState::reset;
+        }
+        else if (Render3D::IsCapturingWindow(w))
+        {
+            // Dragging with the right mouse button looks around in the 3D view.
+            _ticksSinceDragStart = std::nullopt;
+            Render3D::OnMouseLook(differentialCoords.x, differentialCoords.y);
         }
         else if (differentialCoords.x != 0 || differentialCoords.y != 0)
         {
@@ -1087,6 +1099,8 @@ namespace OpenRCT2
                     InputWindowResizeBegin(*w, widgetIndex, screenCoords);
                 break;
             case WidgetType::viewport:
+                if (Render3D::IsCapturingWindow(w))
+                    break;
                 _inputState = InputState::viewportLeft;
                 gInputDragLast = screenCoords;
                 _dragWidget.windowClassification = windowClass;
@@ -1171,6 +1185,8 @@ namespace OpenRCT2
                 switch (window->widgets[widgetId].type)
                 {
                     case WidgetType::viewport:
+                        if (Render3D::IsCapturingWindow(window))
+                            break;
                         if (!gInputFlags.has(InputFlag::toolActive))
                         {
                             if (ViewportInteractionLeftOver(screenCoords))
@@ -1240,6 +1256,10 @@ namespace OpenRCT2
 
             if (w == nullptr)
                 ToolCancel();
+            else if (Render3D::IsActive())
+            {
+                // Tools need isometric screen-to-map picking, which the 3D view does not provide.
+            }
             else if (InputGetState() != InputState::viewportRight)
                 w->onToolUpdate(gCurrentToolWidget.widgetIndex, screenCoords);
         }

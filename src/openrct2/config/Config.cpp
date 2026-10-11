@@ -37,6 +37,8 @@
 #include "IniReader.hpp"
 #include "IniWriter.hpp"
 
+#include <algorithm>
+
 using namespace OpenRCT2;
 using namespace OpenRCT2::Ui;
 
@@ -225,6 +227,13 @@ namespace OpenRCT2::Config
                 "default_inspection_interval", RideInspection::every30Minutes, Enum_RideInspectionInterval);
             model->lastRunVersion = reader->GetString("last_run_version", "");
             model->invertViewportDrag = reader->GetBoolean("invert_viewport_drag", false);
+            model->view3dFieldOfView = std::clamp(reader->GetInt32("view3d_field_of_view", 70), 40, 110);
+            model->view3dMoveSpeed = std::clamp(reader->GetInt32("view3d_move_speed", 256), 16, 4096);
+            model->view3dMouseSensitivity = std::clamp(reader->GetInt32("view3d_mouse_sensitivity", 7), 1, 20);
+            model->view3dDrawDistance = std::clamp(reader->GetInt32("view3d_draw_distance", 100), 25, 200);
+            model->view3dInvertY = reader->GetBoolean("view3d_invert_y", false);
+            model->view3dSmoothSprites = reader->GetBoolean("view3d_smooth_sprites", true);
+            model->view3dShadows = reader->GetBoolean("view3d_shadows", true);
             model->loadSaveSort = reader->GetEnum<FileBrowserSort>(
                 "load_save_sort", FileBrowserSort::nameAscending, Enum_FileBrowserSort);
             model->minimizeFullscreenFocusLoss = reader->GetBoolean("minimize_fullscreen_focus_loss", true);
@@ -331,6 +340,13 @@ namespace OpenRCT2::Config
             "default_inspection_interval", model->defaultInspectionInterval, Enum_RideInspectionInterval);
         writer->WriteString("last_run_version", model->lastRunVersion);
         writer->WriteBoolean("invert_viewport_drag", model->invertViewportDrag);
+        writer->WriteInt32("view3d_field_of_view", model->view3dFieldOfView);
+        writer->WriteInt32("view3d_move_speed", model->view3dMoveSpeed);
+        writer->WriteInt32("view3d_mouse_sensitivity", model->view3dMouseSensitivity);
+        writer->WriteInt32("view3d_draw_distance", model->view3dDrawDistance);
+        writer->WriteBoolean("view3d_invert_y", model->view3dInvertY);
+        writer->WriteBoolean("view3d_smooth_sprites", model->view3dSmoothSprites);
+        writer->WriteBoolean("view3d_shadows", model->view3dShadows);
         writer->WriteEnum<FileBrowserSort>("load_save_sort", model->loadSaveSort, Enum_FileBrowserSort);
         writer->WriteBoolean("minimize_fullscreen_focus_loss", model->minimizeFullscreenFocusLoss);
         writer->WriteBoolean("disable_screensaver", model->disableScreensaver);

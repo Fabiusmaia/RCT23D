@@ -97,6 +97,7 @@ namespace OpenRCT2
         editorParkEntrance = 139,
         editorStepController = 140,
         editorStatusLine = 141,
+        view3DSettings = 142,
 
         // Only used for colour schemes
         staff = 220,

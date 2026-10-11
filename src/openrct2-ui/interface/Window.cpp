@@ -25,6 +25,7 @@
 #include <openrct2/drawing/RenderTarget.h>
 #include <openrct2/interface/Viewport.h>
 #include <openrct2/interface/Widget.h>
+#include <openrct2/render3d/Render3D.h>
 #include <openrct2/ui/WindowManager.h>
 #include <openrct2/world/Location.hpp>
 
@@ -146,6 +147,12 @@ namespace OpenRCT2::Ui
     {
         if (gLegacyScene == LegacyScene::trackDesignsManager || gLegacyScene == LegacyScene::titleSequence)
             return;
+
+        if (Render3D::IsCapturingWindow(&w))
+        {
+            Render3D::OnMouseWheel(wheel);
+            return;
+        }
 
         if (wheel < 0)
             Windows::WindowZoomIn(w, true);

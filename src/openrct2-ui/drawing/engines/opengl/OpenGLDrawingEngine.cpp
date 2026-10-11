@@ -19,6 +19,7 @@
     #include "GLSLTypes.h"
     #include "OpenGLAPI.h"
     #include "OpenGLFramebuffer.h"
+    #include "Renderer3D.h"
     #include "SwapFramebuffer.h"
     #include "TextureCache.h"
     #include "TransparencyDepth.h"
@@ -28,6 +29,8 @@
     #include <cassert>
     #include <cmath>
     #include <openrct2/config/Config.h>
+    #include <openrct2/SpriteIds.h>
+    #include <openrct2/core/Imaging.h>
     #include <openrct2/drawing/Drawing.Sprite.h>
     #include <openrct2/drawing/Drawing.String.h>
     #include <openrct2/drawing/Drawing.h>
@@ -40,6 +43,8 @@
     #include <openrct2/drawing/WeatherDrawer.h>
     #include <openrct2/interface/Screenshot.h>
     #include <openrct2/interface/Window.h>
+    #include <openrct2/interface/WindowBase.h>
+    #include <openrct2/render3d/Render3D.h>
     #include <openrct2/ui/UiContext.h>
     #include <openrct2/world/Weather.h>
 
@@ -224,6 +229,9 @@ private:
     OpenGLWeatherDrawer _weatherDrawer;
     InvalidationGrid _invalidationGrid;
 
+    // Created when the 3D view is switched on and released when it is switched off.
+    std::unique_ptr<Renderer3D> _renderer3D;
+
 public:
     SDL_Color Palette[256];
     vec4 GLPalette[256];
@@ -240,6 +248,8 @@ public:
 
     ~OpenGLDrawingEngine() override
     {
+        // GPU resources must be released while the context still exists.
+        _renderer3D.reset();
         SDL_GL_DeleteContext(_context);
     }
 
@@ -338,20 +348,35 @@ public:
     {
         _drawingContext->FlushCommandBuffers();
 
+        const bool rendered3D = Render3DView();
+
         glDisable(GL_DEPTH_TEST);
-        if (_scaleFramebuffer != nullptr)
+        OpenGLFramebuffer& target = _scaleFramebuffer != nullptr ? *_scaleFramebuffer : *_screenFramebuffer;
+        // Render to intermediary RGB buffer for GL_LINEAR when scaling.
+        target.Bind();
+
+        if (rendered3D)
         {
-            // Render to intermediary RGB buffer for GL_LINEAR
-            _scaleFramebuffer->Bind();
-        }
-        else
-        {
-            _screenFramebuffer->Bind();
+            // Put the 3D scene down first, then blend the UI over it. Palette index 0 has zero alpha, which is what
+            // the main viewport is filled with while the 3D view is active.
+            target.Copy(_renderer3D->GetFramebuffer(), GL_LINEAR);
+            glCall(glEnable, GL_BLEND);
+            glCall(glBlendFunc, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         }
 
         _applyPaletteShader->Use();
         _applyPaletteShader->SetTexture(_drawingContext->GetFinalFramebuffer().GetTexture());
         _applyPaletteShader->Draw();
+
+        if (rendered3D)
+        {
+            glCall(glDisable, GL_BLEND);
+        }
+
+        if (auto screenshotPath = Render3D::TakeScreenshotRequest(); screenshotPath.has_value())
+        {
+            SaveCompositedFrame(target, *screenshotPath);
+        }
 
         if (_smoothScaleFramebuffer != nullptr)
         {
@@ -536,7 +561,100 @@ public:
     void InvalidateImage(uint32_t image) override
     {
         _drawingContext->GetTextureCache()->InvalidateImage(image);
+
+        // Scrolling text is regenerated constantly and is not shown in 3D; anything else means objects changed.
+        const bool isScrollingText = image >= SPR_SCROLLING_TEXT_START && image < SPR_SCROLLING_TEXT_END;
+        if (_renderer3D != nullptr && !isScrollingText)
+        {
+            _renderer3D->InvalidateImages();
+        }
     }
+
+    bool SupportsRender3D() const override
+    {
+        return true;
+    }
+
+private:
+    // Writes the RGB contents of the framebuffer to a PNG file.
+    static void SaveCompositedFrame(const OpenGLFramebuffer& framebuffer, const std::string& path)
+    {
+        const auto width = static_cast<int32_t>(framebuffer.GetWidth());
+        const auto height = static_cast<int32_t>(framebuffer.GetHeight());
+        std::vector<uint8_t> pixels(static_cast<size_t>(width) * height * 4);
+        framebuffer.BindRead();
+        glCall(glPixelStorei, GL_PACK_ALIGNMENT, 1);
+        glCall(glReadPixels, 0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, pixels.data());
+        framebuffer.Bind();
+
+        Image image;
+        image.Width = width;
+        image.Height = height;
+        image.Depth = 32;
+        image.Stride = width * 4;
+        image.Pixels.resize(pixels.size());
+        // OpenGL rows start at the bottom; PNG rows start at the top.
+        for (int32_t y = 0; y < height; y++)
+        {
+            const auto* src = &pixels[static_cast<size_t>(height - 1 - y) * image.Stride];
+            auto* dst = &image.Pixels[static_cast<size_t>(y) * image.Stride];
+            std::copy_n(src, image.Stride, dst);
+            for (int32_t x = 0; x < width; x++)
+                dst[x * 4 + 3] = 255;
+        }
+
+        try
+        {
+            Imaging::WriteToFile(path, image, ImageFormat::png);
+            LOG_INFO("Saved 3D view screenshot to %s", path.c_str());
+        }
+        catch (const std::exception& e)
+        {
+            LOG_ERROR("Unable to save screenshot %s: %s", path.c_str(), e.what());
+        }
+    }
+
+    // Draws the 3D view if it is active. Returns true if the result should be composited under the UI.
+    bool Render3DView()
+    {
+        if (!Render3D::IsActive())
+        {
+            // Free GPU memory as soon as the 3D view is closed.
+            _renderer3D.reset();
+            return false;
+        }
+
+        auto* mainWindow = WindowGetMain();
+        if (mainWindow == nullptr || mainWindow->viewport == nullptr)
+            return false;
+
+        try
+        {
+            if (_renderer3D == nullptr)
+            {
+                _renderer3D = std::make_unique<Renderer3D>(Palette);
+            }
+
+            const auto* viewport = mainWindow->viewport;
+            _renderer3D->Render(
+                static_cast<int32_t>(_width), static_cast<int32_t>(_height), viewport->pos.x, viewport->pos.y,
+                viewport->width, viewport->height);
+            if (Render3D::TakeStatsRequest())
+            {
+                LOG_INFO("3D view: %s", _renderer3D->GetStatsText().c_str());
+            }
+            return true;
+        }
+        catch (const std::exception& e)
+        {
+            LOG_ERROR("3D view failed: %s", e.what());
+            _renderer3D.reset();
+            Render3D::ReportFailure(e.what());
+            return false;
+        }
+    }
+
+public:
 
 private:
     static OpenGLVersion GetOpenGLVersion()
@@ -714,6 +832,12 @@ void OpenGLDrawingContext::FillRect(
     command.flags = DrawRectCommand::FLAG_NO_TEXTURE;
     command.depth = _drawCount++;
     command.zoom = 1.0f;
+
+    if (paletteIndex == PaletteIndex::transparent)
+    {
+        // Match the software renderer, which writes index 0. The 3D view relies on this to show through the UI.
+        command.flags |= DrawRectCommand::FLAG_WRITE_TRANSPARENT;
+    }
 
     if (crossHatch)
     {

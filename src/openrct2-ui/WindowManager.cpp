@@ -153,6 +153,8 @@ public:
                 return TopToolbarOpen();
             case WindowClass::viewClipping:
                 return ViewClippingOpen();
+            case WindowClass::view3DSettings:
+                return View3DSettingsOpen();
             case WindowClass::viewport:
                 return ViewportOpen();
             case WindowClass::water:

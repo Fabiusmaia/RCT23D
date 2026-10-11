@@ -396,6 +396,7 @@ namespace OpenRCT2::Ui::Windows
 
     // ViewClipping
     WindowBase* ViewClippingOpen();
+    WindowBase* View3DSettingsOpen();
 
     // Viewport
     WindowBase* ViewportOpen();

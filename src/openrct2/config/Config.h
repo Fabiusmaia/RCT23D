@@ -89,6 +89,15 @@ namespace OpenRCT2::Config
         bool invertViewportDrag;
         bool zoomToCursor;
 
+        // 3D view
+        int32_t view3dFieldOfView;
+        int32_t view3dMoveSpeed;
+        int32_t view3dMouseSensitivity;
+        int32_t view3dDrawDistance;
+        bool view3dInvertY;
+        bool view3dSmoothSprites;
+        bool view3dShadows;
+
         // Gamepad
         int32_t gamepadDeadzone;
         float gamepadSensitivity;

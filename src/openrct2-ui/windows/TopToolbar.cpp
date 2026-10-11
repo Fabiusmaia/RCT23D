@@ -38,6 +38,7 @@
 #include <openrct2/interface/Viewport.h>
 #include <openrct2/localisation/Formatter.h>
 #include <openrct2/network/Network.h>
+#include <openrct2/render3d/Render3D.h>
 #include <openrct2/ui/UiContext.h>
 #include <openrct2/ui/WindowManager.h>
 #include <openrct2/windows/Intent.h>
@@ -133,6 +134,9 @@ namespace OpenRCT2::Ui::Windows
         DDIDX_HIGHLIGHT_PATH_ISSUES = 19,
         // separator
         DDIDX_TRANSPARENCY = 21,
+        // separator
+        DDIDX_3D_VIEW = 23,
+        DDIDX_3D_VIEW_SETTINGS = 24,
 
         TOP_TOOLBAR_VIEW_MENU_COUNT,
     };
@@ -300,6 +304,9 @@ namespace OpenRCT2::Ui::Windows
                 ToggleOption(DDIDX_HIGHLIGHT_PATH_ISSUES, STR_HIGHLIGHT_PATH_ISSUES_MENU),
                 ExtSeparator(),
                 ToggleOption(DDIDX_TRANSPARENCY, STR_TRANSPARENCY_OPTIONS),
+                ExtSeparator(),
+                ToggleOption(DDIDX_3D_VIEW, STR_3D_VIEW_MENU_ITEM),
+                ToggleOption(DDIDX_3D_VIEW_SETTINGS, STR_3D_VIEW_SETTINGS),
             };
 
             static_assert(ItemIDsMatchIndices(items));
@@ -328,6 +335,7 @@ namespace OpenRCT2::Ui::Windows
             gDropdown.items[DDIDX_PATH_HEIGHTS].setChecked(mvpFlags.has(ViewportFlag::pathHeights));
             gDropdown.items[DDIDX_VIEW_CLIPPING].setChecked(mvpFlags.has(ViewportFlag::clipView));
             gDropdown.items[DDIDX_HIGHLIGHT_PATH_ISSUES].setChecked(mvpFlags.has(ViewportFlag::highlightPathIssues));
+            gDropdown.items[DDIDX_3D_VIEW].setChecked(Render3D::IsActive());
 
             gDropdown.defaultIndex = DDIDX_UNDERGROUND_INSIDE;
         }
@@ -404,6 +412,12 @@ namespace OpenRCT2::Ui::Windows
                         break;
                     case DDIDX_TRANSPARENCY:
                         ContextOpenWindow(WindowClass::transparency);
+                        break;
+                    case DDIDX_3D_VIEW:
+                        Render3D::Toggle();
+                        break;
+                    case DDIDX_3D_VIEW_SETTINGS:
+                        ContextOpenWindow(WindowClass::view3DSettings);
                         break;
                     default:
                         return;

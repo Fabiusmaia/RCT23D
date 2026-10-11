@@ -49,6 +49,7 @@
     #define glClearDepth __static__glClearDepth
     #define glReadBuffer __static__glReadBuffer
     #define glDrawBuffer __static__glDrawBuffer
+    #define glDepthMask __static__glDepthMask
 
 // END [Do not define 1.1 function signatures]
 
@@ -93,6 +94,7 @@
     #undef glClearDepth
     #undef glReadBuffer
     #undef glDrawBuffer
+    #undef glDepthMask
 
 // 1.1 function signatures
 using PFNGLBEGINPROC = void(APIENTRYP)(GLenum mode);
@@ -133,6 +135,7 @@ using PFNGLCHECKFRAMEBUFFERSTATUSPROC = GLenum(APIENTRYP)(GLenum target);
 using PFNGLCLEARDEPTHPROC = void(APIENTRYP)(GLdouble depth);
 using PFNGLREADBUFFERPROC = void(APIENTRYP)(GLenum mode);
 using PFNGLDRAWBUFFERPROC = void(APIENTRYP)(GLenum mode);
+using PFNGLDEPTHMASKPROC = void(APIENTRYP)(GLboolean flag);
 
     #define OPENGL_PROC(TYPE, PROC) extern TYPE PROC;
     #include "OpenGLAPIProc.h"
