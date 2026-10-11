@@ -60,7 +60,8 @@ namespace OpenRCT2::Render3D
 
     // Projects the sprite onto the faces of its bounding box that face the isometric camera, so that seen from that
     // direction it looks exactly like the 2D game while still having depth. The box is grown backwards and upwards
-    // as needed so that no pixel of the sprite is lost.
+    // as needed so that no pixel of the sprite is lost. A sprite much taller than its box puts the part above the box on
+    // a vertical card across the middle of the box.
     void AddSpriteBox(std::vector<Vertex>& out, const SpritePlacement& placement, const TextureRegion& texture);
 
     // How far a box has to grow to hold the sprite, in game units: horizontally (backwards) and upwards.

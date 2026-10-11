@@ -274,6 +274,49 @@ TEST(Render3D, SpriteBoxTexturesMatchTheIsometricView)
     }
 }
 
+TEST(Render3D, TallSpriteTopIsAboveTheMiddleOfItsBox)
+{
+    // A pointed roof: a low box with the peak of the sprite well above it. Its peak has to stay above the middle of the
+    // box in every isometric view, otherwise it jumps sideways when the view changes while looking along a map axis.
+    const auto texture = MakeTexture();
+    for (uint8_t rotation = 0; rotation < 4; rotation++)
+    {
+        SpritePlacement placement;
+        placement.rotation = rotation;
+        placement.boundsMin = { 96, 196, 16 };
+        placement.boundsMax = { 128, 228, 24 };
+        const auto centre = ProjectIsometric(rotation, 112, 212, 16);
+        placement.left = centre.x - 32;
+        placement.top = centre.y - 80;
+        placement.width = 64;
+        placement.height = 96;
+
+        std::vector<Vertex> out;
+        AddSpriteBox(out, placement, texture);
+
+        // Where the top middle pixel of the sprite ends up: interpolate along the top edge of the face holding it.
+        bool found = false;
+        for (size_t i = 0; i + 1 < out.size() && !found; i++)
+        {
+            for (size_t j = i + 1; j < out.size() && !found; j++)
+            {
+                const auto [ui, ti] = SpriteUV(out[i], texture);
+                const auto [uj, tj] = SpriteUV(out[j], texture);
+                if (std::abs(ti) > kEpsilon || std::abs(tj) > kEpsilon || (ui - 0.5f) * (uj - 0.5f) > 0
+                    || std::abs(ui - uj) < kEpsilon)
+                    continue;
+                const float f = (0.5f - ui) / (uj - ui);
+                const Vec3 gi = WorldToGame(out[i].position);
+                const Vec3 gj = WorldToGame(out[j].position);
+                EXPECT_NEAR(gi.x + (gj.x - gi.x) * f, 112.0f, 0.5f);
+                EXPECT_NEAR(gi.y + (gj.y - gi.y) * f, 212.0f, 0.5f);
+                found = true;
+            }
+        }
+        EXPECT_TRUE(found);
+    }
+}
+
 TEST(Render3D, MismatchedSpriteFallsBackToCard)
 {
     const auto texture = MakeTexture();

@@ -154,9 +154,37 @@ namespace OpenRCT2::Render3D
         }
         else
         {
-            // The sprite is much taller than its box (trees, flat rides, people). A roof would catch the upper pixels
-            // far behind the object, so extend the front faces until they hold the whole sprite instead.
-            z1 = std::max(z1, (a1 + b1) * 0.5f - placement.top);
+            // The sprite is much taller than its box (trees, roofs, flat rides, people). A roof would catch the upper
+            // pixels far behind the object. Extending the front faces upwards would put the top of the sprite (the
+            // peak of a roof, the crown of a tree) on the front corner, which seen from a map axis is at one side of
+            // the object, a different side for each isometric view. Instead the part above the box goes on a vertical
+            // card along the diagonal between the side corners, which is in the middle of the object from any view.
+            // The card reaches down to the top edges of the front faces, so everything above them stays upright.
+            const float wa = a1 - a0;
+            const float wb = b1 - b0;
+            // Point of the vertical plane through (a1, b0) and (a0, b1) that projects to screen (sx, sy), no lower than
+            // minZ.
+            auto onCard = [&](float sx, float sy, float minZ) {
+                const float t = (sx - (b0 - a1)) / (wa + wb);
+                const float a = a1 - t * wa;
+                const float b = b0 + t * wb;
+                return FromRotated(r, a, b, std::max(minZ, (a + b) * 0.5f - sy));
+            };
+            const float leftX = b0 - a1;
+            const float frontX = b1 - a1;
+            const float rightX = b1 - a0;
+            const float frontY = (a1 + b1) * 0.5f - z1;
+            const GamePoint front = onCard(frontX, frontY, z0);
+            EmitProjectedQuad(
+                out, placement, texture,
+                { onCard(leftX, placement.top, z1), onCard(frontX, placement.top, front.z), front,
+                  FromRotated(r, a1, b0, z1) },
+                OutwardFromRotated(r, wb, wa));
+            EmitProjectedQuad(
+                out, placement, texture,
+                { onCard(frontX, placement.top, front.z), onCard(rightX, placement.top, z1), FromRotated(r, a0, b1, z1),
+                  front },
+                OutwardFromRotated(r, wb, wa));
         }
         // Face towards +a.
         EmitProjectedQuad(
